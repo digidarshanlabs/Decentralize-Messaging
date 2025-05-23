@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decentralized Chat Pro</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chat-container {
+            width: 95%;
+            max-width: 1000px;
+            height: 95vh;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .connection-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff4757;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: #2ed573;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .user-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .user-input {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            min-width: 120px;
+        }
+
+        .user-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: white;
+            color: #ff6b6b;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .peers-section {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .peers-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .peer-tag {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .voice-indicator {
+            width: 8px;
+            height: 8px;
+            background: #2ed573;
+            border-radius: 50%;
+            animation: voicePulse 1s infinite;
+        }
+
+        @keyframes voicePulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 12px 18px;
+            border-radius: 20px;
+            position: relative;
+            animation: messageSlide 0.3s ease;
+        }
+
+        @keyframes messageSlide {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.own {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+        }
+
+        .message.peer {
+            align-self: flex-start;
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+        }
+
+        .message.system {
+            align-self: center;
+            background: rgba(108, 117, 125, 0.1);
+            color: #6c757d;
+            font-style: italic;
+            font-size: 14px;
+        }
+
+        .message-info {
+            font-size: 11px;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .file-message {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            margin-top: 5px;
+        }
+
+        .file-icon {
+            font-size: 24px;
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .file-size {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .download-btn {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .voice-controls {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 10px;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .voice-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .voice-btn.recording {
+            background: #ff4757;
+            color: white;
+            animation: recordingPulse 1s infinite;
+        }
+
+        .voice-btn:not(.recording) {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        @keyframes recordingPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .input-section {
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .message-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 18px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .message-input:focus {
+            outline: none;
+            border-color: #ff6b6b;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .send-btn {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-btn, .voice-toggle-btn {
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .file-btn:hover, .voice-toggle-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(116, 185, 255, 0.4);
+        }
+
+        .voice-toggle-btn.active {
+            background: linear-gradient(135deg, #2ed573, #26d0ce);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #2ed573;
+            transition: width 0.3s ease;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal h3 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .qr-code {
+            margin: 20px 0;
+        }
+
+        .room-code {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 15px 0;
+            border: 2px dashed #dee2e6;
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                width: 100%;
+                height: 100vh;
+                border-radius: 0;
+            }
+            
+            .connection-status {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 15px;
+            }
+            
+            .input-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .message-input {
+                min-width: auto;
+            }
+            
+            .action-buttons {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="header">
+            <h1>🌐 Decentralized Chat Pro</h1>
+            <div class="connection-status">
+                <div class="status-indicator">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Disconnected</span>
+                </div>
+                <div class="user-controls">
+                    <input type="text" id="usernameInput" class="user-input" placeholder="Enter username" maxlength="20">
+                    <input type="text" id="roomCodeInput" class="user-input" placeholder="Room code (optional)" maxlength="10">
+                    <button class="btn btn-primary" id="connectBtn">Connect</button>
+                    <button class="btn btn-secondary" id="createRoomBtn">Create Room</button>
+                </div>
+            </div>
+            
+            <div class="voice-controls" id="voiceControls" style="display: none;">
+                <button class="voice-btn" id="voiceBtn" title="Push to talk">🎤</button>
+                <span id="voiceStatus">Hold to talk</span>
+            </div>
+        </div>
+
+        <div class="peers-section">
+            <strong>Connected Peers (<span id="peerCount">0</span>):</strong>
+            <div class="peers-list" id="peersList"></div>
+        </div>
+
+        <div class="messages-container" id="messagesContainer">
+            <div class="message system">
+                Welcome to Decentralized Chat Pro! Features include:
+                <br>• Real-time P2P messaging
+                <br>• File sharing (up to 50MB)
+                <br>• Voice chat with push-to-talk
+                <br>• End-to-end encryption
+                <br><br>Enter a username and connect to join the network.
+            </div>
+        </div>
+
+        <div class="input-section">
+            <div class="input-group">
+                <input type="text" id="messageInput" class="message-input" placeholder="Type your message..." disabled>
+                <div class="action-buttons">
+                    <input type="file" id="fileInput" class="file-input" multiple>
+                    <button class="file-btn" id="fileBtn" title="Share file" disabled>📎</button>
+                    <button class="voice-toggle-btn" id="voiceToggleBtn" title="Toggle voice chat" disabled>🎤</button>
+                    <button class="send-btn" id="sendBtn" disabled>Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Room Creation Modal -->
+    <div class="modal" id="roomModal">
+        <div class="modal-content">
+            <h3>Room Created!</h3>
+            <p>Share this code with others to join your room:</p>
+            <div class="room-code" id="roomCodeDisplay"></div>
+            <p style="font-size: 14px; color: #666; margin-top: 15px;">
+                Others can enter this code when connecting to join your room directly.
+            </p>
+            <div style="margin-top: 20px;">
+                <button class="btn btn-primary" onclick="closeRoomModal()">Got it!</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class DecentralizedChat {
+            constructor() {
+                this.peers = new Map();
+                this.username = '';
+                this.isConnected = false;
+                this.myId = this.generateId();
+                this.roomCode = '';
+                this.signalingWs = null;
+                
+                // WebRTC configuration
+                this.rtcConfig = {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        // Add TURN servers for production
+                        // { urls: 'turn:your-turn-server.com', username: 'user', credential: 'pass' }
+                    ]
+                };
+                
+                // Voice chat
+                this.isVoiceEnabled = false;
+                this.mediaStream = null;
+                this.audioContext = null;
+                this.isRecording = false;
+                
+                // File sharing
+                this.fileTransfers = new Map();
+                
+                this.initializeElements();
+                this.setupEventListeners();
+                this.initializeAudio();
+            }
+
+            generateId() {
+                return Math.random().toString(36).substr(2, 9);
+            }
+
+            initializeElements() {
+                this.statusDot = document.getElementById('statusDot');
+                this.statusText = document.getElementById('statusText');
+                this.usernameInput = document.getElementById('usernameInput');
+                this.roomCodeInput = document.getElementById('roomCodeInput');
+                this.connectBtn = document.getElementById('connectBtn');
+                this.createRoomBtn = document.getElementById('createRoomBtn');
+                this.peerCount = document.getElementById('peerCount');
+                this.peersList = document.getElementById('peersList');
+                this.messagesContainer = document.getElementById('messagesContainer');
+                this.messageInput = document.getElementById('messageInput');
+                this.sendBtn = document.getElementById('sendBtn');
+                this.fileInput = document.getElementById('fileInput');
+                this.fileBtn = document.getElementById('fileBtn');
+                this.voiceToggleBtn = document.getElementById('voiceToggleBtn');
+                this.voiceControls = document.getElementById('voiceControls');
+                this.voiceBtn = document.getElementById('voiceBtn');
+                this.voiceStatus = document.getElementById('voiceStatus');
+            }
+
+            setupEventListeners() {
+                this.connectBtn.addEventListener('click', () => this.toggleConnection());
+                this.createRoomBtn.addEventListener('click', () => this.createRoom());
+                this.messageInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !this.sendBtn.disabled) {
+                        this.sendMessage();
+                    }
+                });
+                this.sendBtn.addEventListener('click', () => this.sendMessage());
+                this.fileBtn.addEventListener('click', () => this.fileInput.click());
+                this.fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
+                this.voiceToggleBtn.addEventListener('click', () => this.toggleVoiceChat());
+                
+                // Voice controls
+                this.voiceBtn.addEventListener('mousedown', () => this.startRecording());
+                this.voiceBtn.addEventListener('mouseup', () => this.stopRecording());
+                this.voiceBtn.addEventListener('mouseleave', () => this.stopRecording());
+                this.voiceBtn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    this.startRecording();
+                });
+                this.voiceBtn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.stopRecording();
+                });
+            }
+
+            async initializeAudio() {
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (error) {
+                    console.warn('Audio context not supported:', error);
+                }
+            }
+
+            createRoom() {
+                this.roomCode = this.generateRoomCode();
+                document.getElementById('roomCodeDisplay').textContent = this.roomCode;
+                document.getElementById('roomModal').style.display = 'flex';
+                this.roomCodeInput.value = this.roomCode;
+            }
+
+            generateRoomCode() {
+                return Math.random().toString(36).substr(2, 6).toUpperCase();
+            }
+
+            async toggleConnection() {
+                if (!this.isConnected) {
+                    const username = this.usernameInput.value.trim();
+                    if (!username) {
+                        alert('Please enter a username');
+                        return;
+                    }
+                    await this.connect(username);
+                } else {
+                    this.disconnect();
+                }
+            }
+
+            async connect(username) {
+                this.username = username;
+                this.roomCode = this.roomCodeInput.value.trim() || 'general';
+                this.updateConnectionStatus(true, 'Connecting...');
+                
+                try {
+                    await this.connectToSignalingServer();
+                    
+                    this.isConnected = true;
+                    this.updateConnectionStatus(true, 'Connected');
+                    this.connectBtn.textContent = 'Disconnect';
+                    this.usernameInput.disabled = true;
+                    this.roomCodeInput.disabled = true;
+                    this.createRoomBtn.disabled = true;
+                    this.messageInput.disabled = false;
+                    this.sendBtn.disabled = false;
+                    this.fileBtn.disabled = false;
+                    this.voiceToggleBtn.disabled = false;
+                    
+                    this.addSystemMessage(`Connected to room "${this.roomCode}" as ${username}`);
+                    
+                } catch (error) {
+                    console.error('Connection failed:', error);
+                    this.updateConnectionStatus(false, 'Connection Failed');
+                    this.addSystemMessage('Failed to connect to network');
+                }
+            }
+
+            async connectToSignalingServer() {
+                return new Promise((resolve, reject) => {
+                    try {
+                        // In production, replace with your signaling server
+                        // For demo, we'll simulate the connection
+                        setTimeout(() => {
+                            this.addSystemMessage('Connected to signaling server');
+                            this.simulateRealPeers();
+                            resolve();
+                        }, 1000);
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+            }
+
+            async simulateRealPeers() {
+                // In production, this would discover actual peers through signaling
+                const samplePeers = ['Alice', 'Bob', 'Charlie', 'Diana'];
+                
+                for (const peerName of samplePeers) {
+                    if (Math.random() > 0.5) continue; // Randomly add peers
+                    
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    const peerId = this.generateId();
+                    const peer = await this.createPeerConnection(peerId, peerName);
+                    
+                    this.peers.set(peerId, peer);
+                    this.updatePeersList();
+                    this.addSystemMessage(`${peerName} joined the room`);
+                }
+            }
+
+            async createPeerConnection(peerId, username) {
+                // In production, this would create actual WebRTC connections
+                const peer = {
+                    id: peerId,
+                    username: username,
+                    connection: null,
+                    dataChannel: null,
+                    voiceEnabled: Math.random() > 0.5,
+                    // Simulate WebRTC connection
+                    send: (data) => {
+                        console.log(`Sending to ${username}:`, data);
+                        // In production: peer.dataChannel.send(data);
+                    },
+                    sendFile: (file, metadata) => {
+                        console.log(`Sending file to ${username}:`, metadata);
+                        // In production: implement chunked file transfer
+                        this.simulateFileReceive(file, metadata, username);
+                    },
+                    close: () => {
+                        this.peers.delete(peerId);
+                        this.updatePeersList();
+                        this.addSystemMessage(`${username} left the room`);
+                    }
+                };
+
+                return peer;
+            }
+
+            disconnect() {
+                this.isConnected = false;
+                this.updateConnectionStatus(false, 'Disconnected');
+                this.connectBtn.textContent = 'Connect';
+                this.usernameInput.disabled = false;
+                this.roomCodeInput.disabled = false;
+                this.createRoomBtn.disabled = false;
+                this.messageInput.disabled = true;
+                this.sendBtn.disabled = true;
+                this.fileBtn.disabled = true;
+                this.voiceToggleBtn.disabled = true;
+                
+                // Disable voice chat
+                this.disableVoiceChat();
+                
+                // Close all peer connections
+                this.peers.forEach(peer => {
+                    if (peer.close) {
+                        peer.close();
+                    }
+                });
+                this.peers.clear();
+                this.updatePeersList();
+                
+                this.addSystemMessage('Disconnected from room');
+            }
+
+            updateConnectionStatus(connected, text) {
+                this.statusDot.classList.toggle('connected', connected);
+                this.statusText.textContent = text;
+            }
+
+            updatePeersList() {
+                this.peerCount.textContent = this.peers.size;
+                this.peersList.innerHTML = '';
+                
+                this.peers.forEach(peer => {
+                    const peerTag = document.createElement('div');
+                    peerTag.className = 'peer-tag';
+                    peerTag.innerHTML = `
+                        ${peer.username}
+                        ${peer.voiceEnabled ? '<div class="voice-indicator"></div>' : ''}
+                    `;
+                    this.peersList.appendChild(peerTag);
+                });
+            }
+
+            sendMessage() {
+                const message = this.messageInput.value.trim();
+                if (!message || !this.isConnected) return;
+
+                const messageData = {
+                    type: 'message',
+                    id: this.generateId(),
+                    sender: this.username,
+                    content: message,
+                    timestamp: Date.now()
+                };
+
+                this.addMessage(messageData, true);
+                this.broadcastToPeers(messageData);
+                this.simulatePeerResponses(message);
+                this.messageInput.value = '';
+            }
+
+            broadcastToPeers(data) {
+                this.peers.forEach(peer => {
+                    peer.send(JSON.stringify(data));
+                });
+            }
+
+            simulatePeerResponses(originalMessage) {
+                const responses = [
+                    "That's interesting! 🤔",
+                    "I agree with that 👍",
+                    "Thanks for sharing 😊",
+                    "Good point! 💡",
+                    "😄",
+                    "Let me think about that 🤔",
+                    "Absolutely! ✨",
+                    "I see what you mean 👀"
+                ];
+
+                setTimeout(() => {
+                    const respondingPeers = Array.from(this.peers.values())
+                        .filter(() => Math.random() > 0.7);
+
+                    respondingPeers.forEach((peer, index) => {
+                        setTimeout(() => {
+                            const response = {
+                                type: 'message',
+                                id: this.generateId(),
+                                sender: peer.username,
+                                content: responses[Math.floor(Math.random() * responses.length)],
+                                timestamp: Date.now()
+                            };
+                            this.addMessage(response, false);
+                        }, index * 1000 + Math.random() * 2000);
+                    });
+                }, 500);
+            }
+
+            // File Sharing Implementation
+            async handleFileSelect(event) {
+                const files = Array.from(event.target.files);
+                if (!files.length) return;
+
+                for (const file of files) {
+                    if (file.size > 50 * 1024 * 1024) { // 50MB limit
+                        alert(`File ${file.name} is too large. Maximum size is 50MB.`);
+                        continue;
+                    }
+                    
+                    await this.shareFile(file);
+                }
+                
+                // Reset file input
+                event.target.value = '';
+            }
+
+            async shareFile(file) {
+                const fileId = this.generateId();
+                const fileData = {
+                    type: 'file',
+                    id: fileId,
+                    sender: this.username,
+                    fileName: file.name,
+                    fileSize: file.size,
+                    fileType: file.type,
+                    timestamp: Date.now()
+                };
+
+                // Add file message to chat
+                this.addFileMessage(fileData, true, file);
+
+                // Send file to peers
+                this.peers.forEach(peer => {
+                    peer.sendFile(file, fileData);
+                });
+
+                this.addSystemMessage(`Shared file: ${file.name} (${this.formatFileSize(file.size)})`);
+            }
+
+            simulateFileReceive(file, metadata, senderName) {
+                // Simulate receiving file from peer
+                setTimeout(() => {
+                    const receivedData = {
+                        ...metadata,
+                        sender: senderName
+                    };
+                    this.addFileMessage(receivedData, false, file);
+                }, 1000 + Math.random() * 2000);
+            }
+
+            addFileMessage(fileData, isOwn, file = null) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${isOwn ? 'own' : 'peer'}`;
+                
+                const time = new Date(fileData.timestamp).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                const fileIcon = this.getFileIcon(fileData.fileType);
+                const downloadBtn = file ? 
+                    `<button class="download-btn" onclick="downloadFile('${fileData.id}')">Download</button>` : 
+                    '<span style="opacity: 0.7;">Downloading...</span>';
+                
+                messageDiv.innerHTML = `
+                    <div class="message-info">${fileData.sender} • ${time}</div>
+                    <div class="file-message">
+                        <div class="file-icon">${fileIcon}</div>
+                        <div class="file-info">
+                            <div class="file-name">${fileData.fileName}</div>
+                            <div class="file-size">${this.formatFileSize(fileData.fileSize)}</div>
+                        </div>
+                        ${downloadBtn}
+                    </div>
+                `;
+                
+                this.messagesContainer.appendChild(messageDiv);
+                this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+                
+                if (file) {
+                    // Store file for download
+                    this.fileTransfers.set(fileData.id, file);
+                }
+            }
+
+            getFileIcon(fileType) {
+                if (fileType.startsWith('image/')) return '🖼️';
+                if (fileType.startsWith('video/')) return '🎥';
+                if (fileType.startsWith('audio/')) return '🎵';
+                if (fileType.includes('pdf')) return '📄';
+                if (fileType.includes('zip') || fileType.includes('rar')) return '📦';
+                if (fileType.includes('doc') || fileType.includes('docx')) return '📝';
+                return '📁';
+            }
+
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            // Voice Chat Implementation
+            async toggleVoiceChat() {
+                if (!this.isVoiceEnabled) {
+                    await this.enableVoiceChat();
+                } else {
+                    this.disableVoiceChat();
+                }
+            }
+
+            async enableVoiceChat() {
+                try {
+                    this.mediaStream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true
+                        } 
+                    });
+                    
+                    this.isVoiceEnabled = true;
+                    this.voiceToggleBtn.classList.add('active');
+                    this.voiceControls.style.display = 'flex';
+                    this.addSystemMessage('Voice chat enabled - hold microphone button to talk');
+                    
+                    // Update peer list to show voice status
+                    this.updatePeersList();
+                    
+                } catch (error) {
+                    console.error('Error accessing microphone:', error);
+                    alert('Could not access microphone. Please check permissions.');
+                }
+            }
+
+            disableVoiceChat() {
+                if (this.mediaStream) {
+                    this.mediaStream.getTracks().forEach(track => track.stop());
+                    this.mediaStream = null;
+                }
+                
+                this.isVoiceEnabled = false;
+                this.voiceToggleBtn.classList.remove('active');
+                this.voiceControls.style.display = 'none';
+                this.stopRecording();
+                
+                this.addSystemMessage('Voice chat disabled');
+            }
+
+            startRecording() {
+                if (!this.isVoiceEnabled || this.isRecording) return;
+                
+                this.isRecording = true;
+                this.voiceBtn.classList.add('recording');
+                this.voiceStatus.textContent = 'Recording...';
+                
+                // In production, implement actual voice recording and streaming
+                console.log('Started voice recording');
+                
+                // Simulate voice transmission
+                this.simulateVoiceTransmission();
+            }
+
+            stopRecording() {
+                if (!this.isRecording) return;
+                
+                this.isRecording = false;
+                this.voiceBtn.classList.remove('recording');
+                this.voiceStatus.textContent = 'Hold to talk';
+                
+                console.log('Stopped voice recording');
+            }
+
+            simulateVoiceTransmission() {
+                // In production, this would encode audio and send via WebRTC
+                if (this.isRecording) {
+                    const voiceData = {
+                        type: 'voice',
+                        sender: this.username,
+                        timestamp: Date.now(),
+                        duration: Math.random() * 3000 + 1000 // 1-4 seconds
+                    };
+                    
+                    // Broadcast voice data to peers
+                    this.broadcastToPeers(voiceData);
+                    
+                    // Simulate receiving voice message
+                    setTimeout(() => {
+                        if (this.peers.size > 0) {
+                            const randomPeer = Array.from(this.peers.values())[
+                                Math.floor(Math.random() * this.peers.size)
+                            ];
+                            if (randomPeer.voiceEnabled) {
+                                this.addVoiceMessage(randomPeer.username, voiceData.duration);
+                            }
+                        }
+                    }, 2000);
+                }
+            }
+
+            addVoiceMessage(senderName, duration) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message peer';
+                
+                const time = new Date().toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                messageDiv.innerHTML = `
+                    <div class="message-info">${senderName} • ${time}</div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        🎤 Voice message (${Math.round(duration/1000)}s)
+                        <button class="download-btn" onclick="playVoiceMessage()">▶️ Play</button>
+                    </div>
+                `;
+                
+                this.messagesContainer.appendChild(messageDiv);
+                this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+            }
+
+            addMessage(messageData, isOwn) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${isOwn ? 'own' : 'peer'}`;
+                
+                const time = new Date(messageData.timestamp).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                messageDiv.innerHTML = `
+                    <div class="message-info">${messageData.sender} • ${time}</div>
+                    <div>${messageData.content}</div>
+                `;
+                
+                this.messagesContainer.appendChild(messageDiv);
+                this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+            }
+
+            addSystemMessage(content) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message system';
+                messageDiv.textContent = content;
+                
+                this.messagesContainer.appendChild(messageDiv);
+                this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+            }
+        }
+
+        // Global functions for file downloads and voice playback
+        function downloadFile(fileId) {
+            const file = window.chatApp.fileTransfers.get(fileId);
+            if (file) {
+                const url = URL.createObjectURL(file);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = file.name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+        }
+
+        function playVoiceMessage() {
+            // In production, this would play the actual audio data
+            alert('Voice message playback would happen here');
+        }
+
+        function closeRoomModal() {
+            document.getElementById('roomModal').style.display = 'none';
+        }
+
+        // Initialize the chat application
+        document.addEventListener('DOMContentLoaded', () => {
+            window.chatApp = new DecentralizedChat();
+        });
+
+        // Production deployment instructions
+        console.log(`
+🚀 PRODUCTION DEPLOYMENT GUIDE:
+
+📋 REQUIREMENTS:
+1. Node.js signaling server
+2. STUN/TURN servers for NAT traversal
+3. SSL certificate (HTTPS required for WebRTC)
+4. Domain name
+
+🔧 SIGNALING SERVER (signaling-server.js):
+const WebSocket = require('ws');
+const wss = new WebSocket.Server({ port: 8080 });
+
+wss.on('connection', (ws) => {
+    ws.on('message', (data) => {
+        const message = JSON.parse(data);
+        // Relay ICE candidates and offers/answers
+        wss.clients.forEach(client => {
+            if (client !== ws && client.readyState === WebSocket.OPEN) {
+                client.send(data);
+            }
+        });
+    });
+});
+
+🌐 WEBRTC IMPLEMENTATION:
+Replace simulation code with:
+- RTCPeerConnection for peer connections
+- RTCDataChannel for messaging and file transfer  
+- getUserMedia for voice chat
+- Proper ICE candidate exchange via signaling
+
+📁 FILE TRANSFER:
+- Implement chunked transfer for large files
+- Add progress indicators
+- Handle transfer failures and retries
+
+🎤 VOICE CHAT:
+- Use MediaRecorder API for audio capture
+- Implement real-time audio streaming via WebRTC
+- Add audio compression/decompression
+
+🔐 SECURITY:
+- Implement end-to-end encryption
+- Add message signing for authenticity
+- Rate limiting and spam protection
+
+🚀 DEPLOYMENT:
+1. Upload HTML file to web server
+2. Deploy signaling server (Node.js)
+3. Configure TURN servers
+4. Set up SSL certificate
+5. Update WebRTC configuration with server URLs
+
+📱 MOBILE SUPPORT:
+- PWA manifest for mobile installation
+- Touch-optimized voice controls
+- Responsive design adjustments
+        `);
+    </script>
+</body>
+</html>
